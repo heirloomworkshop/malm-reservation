@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0908;
+  --foreground: #f2ede4;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-gold: #c9a84c;
+  --color-gold-light: #e0b96a;
+  --color-gold-dim: #8a7030;
+  --color-surface: #131110;
+  --color-surface-2: #1c1915;
+  --color-surface-3: #252019;
+  --color-border: #2a2218;
+  --color-border-light: #3d3226;
+  --color-muted: #9a9080;
+  --font-sans: var(--font-geist-sans);
+  --font-display: var(--font-cormorant);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), 'Apple SD Gothic Neo', Arial, sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-cormorant), 'Batang', Georgia, serif;
+}
+
+input,
+select,
+textarea {
+  background: var(--color-surface) !important;
+  color: var(--foreground) !important;
+  border-color: var(--color-border) !important;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none !important;
+  border-color: var(--color-gold) !important;
+  box-shadow: 0 0 0 1px var(--color-gold) !important;
+}
+
+input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(0.7) sepia(1) saturate(2) hue-rotate(10deg);
+  cursor: pointer;
+}
+
+select option {
+  background: var(--color-surface-2);
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+}
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-light);
+  border-radius: 3px;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadein {
+  animation: fadeInUp 0.5s ease both;
+}
