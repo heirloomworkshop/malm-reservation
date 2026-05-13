@@ -274,10 +274,12 @@ function ReservationCard({
   reservation: r,
   updating,
   onUpdateStatus,
+  onDelete,
 }: {
   reservation: Reservation
   updating: boolean
   onUpdateStatus: (id: string, status: Status) => void
+  onDelete: (id: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
 
@@ -353,7 +355,28 @@ function ReservationCard({
           </div>
         )}
 
-        {r.status !== 'pending' && (
+        {r.status === 'cancelled' && (
+          <div className="flex gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
+            <button
+              disabled={updating}
+              onClick={() => onUpdateStatus(r.id, 'pending')}
+              className="text-xs px-3 py-1.5 transition-opacity disabled:opacity-40"
+              style={{ color: 'var(--color-muted)', border: '1px solid var(--color-border)' }}
+            >
+              대기로 되돌리기
+            </button>
+            <button
+              disabled={updating}
+              onClick={() => { if (window.confirm('이 예약을 완전히 삭제하시겠습니까?')) onDelete(r.id) }}
+              className="text-xs px-3 py-1.5 transition-opacity disabled:opacity-40"
+              style={{ color: '#9e5c5c', border: '1px solid rgba(158,92,92,0.4)' }}
+            >
+              삭제
+            </button>
+          </div>
+        )}
+
+        {r.status === 'confirmed' && (
           <div className="flex gap-2 mt-3 pt-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
             <button
               disabled={updating}
@@ -426,6 +449,13 @@ export default function AdminPage() {
   async function updateStatus(id: string, status: Status) {
     setUpdating(id)
     await supabase.from('reservations').update({ status }).eq('id', id)
+    await fetchReservations()
+    setUpdating(null)
+  }
+
+  async function deleteReservation(id: string) {
+    setUpdating(id)
+    await supabase.from('reservations').delete().eq('id', id)
     await fetchReservations()
     setUpdating(null)
   }
@@ -570,6 +600,7 @@ export default function AdminPage() {
                     reservation={r}
                     updating={updating === r.id}
                     onUpdateStatus={updateStatus}
+                    onDelete={deleteReservation}
                   />
                 ))}
               </div>
