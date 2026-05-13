@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic'
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { supabase } from '@/lib/supabase'
+import { supabase, isSupabaseConfigured, supabaseUrl } from '@/lib/supabase'
 import { Room, MenuType, BlockedDate } from '@/lib/types'
 
 const MENU_OPTIONS: { value: MenuType; label: string; sub: string }[] = [
@@ -51,10 +51,24 @@ export default function BookPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    supabase.from('rooms').select('*').order('name').then(({ data }) => {
+    // Vercel 환경변수 로드 확인
+    console.log('[Supabase 환경변수 확인]', {
+      configured: isSupabaseConfigured,
+      url: supabaseUrl.replace(/^(https:\/\/[^.]{4})[^/]+/, '$1***'),
+      NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL
+        ? process.env.NEXT_PUBLIC_SUPABASE_URL.slice(0, 20) + '...'
+        : '❌ 미설정',
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        ? '✅ 설정됨'
+        : '❌ 미설정',
+    })
+
+    supabase.from('rooms').select('*').order('name').then(({ data, error }) => {
+      if (error) console.error('[rooms fetch error]', error)
       if (data) setRooms(data)
     })
-    supabase.from('blocked_dates').select('*').then(({ data }) => {
+    supabase.from('blocked_dates').select('*').then(({ data, error }) => {
+      if (error) console.error('[blocked_dates fetch error]', error)
       if (data) setBlockedDates(data)
     })
   }, [])
@@ -101,7 +115,11 @@ export default function BookPage() {
     setSubmitting(true)
     setError('')
 
-    const { error: err } = await supabase.from('reservations').insert({
+    const memoParts = []
+    if (form.menu_requests.trim()) memoParts.push(`[메뉴 요청] ${form.menu_requests.trim()}`)
+    if (form.allergies.trim()) memoParts.push(`[알레르기] ${form.allergies.trim()}`)
+
+    const payload = {
       name: form.name.trim(),
       phone: form.phone.trim(),
       date: form.date,
@@ -110,15 +128,34 @@ export default function BookPage() {
       room_id: form.room_id,
       menu_type: form.menu_type,
       status: 'pending',
-      menu_requests: form.menu_requests.trim() || null,
-      allergies: form.allergies.trim() || null,
-    })
+      memo: memoParts.join('\n') || null,
+    }
 
-    if (err) {
-      setError('예약 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')
-      setSubmitting(false)
-    } else {
+    console.log('[insert payload]', payload)
+
+    try {
+      const res = await fetch('/api/reserve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      const json = await res.json()
+
+      if (!res.ok) {
+        const errMsg = json?.error?.message ?? json?.error ?? '알 수 없는 오류'
+        const errCode = json?.error?.code ?? res.status
+        console.error('[/api/reserve 응답 에러]', json)
+        setError(`예약 저장 중 오류가 발생했습니다. (${errCode}: ${errMsg})`)
+        setSubmitting(false)
+        return
+      }
+
       setSuccess(true)
+    } catch (e) {
+      console.error('[fetch /api/reserve 실패]', e)
+      setError('네트워크 오류가 발생했습니다. 다시 시도해주세요.')
+      setSubmitting(false)
     }
   }
 
@@ -158,6 +195,14 @@ export default function BookPage() {
   return (
     <main className="min-h-screen py-16 px-4" style={{ background: 'var(--background)' }}>
       <div className="max-w-xl mx-auto">
+
+        {/* Supabase 미설정 경고 */}
+        {!isSupabaseConfigured && (
+          <div className="mb-6 px-4 py-3 text-xs text-center border"
+            style={{ borderColor: '#5a3a0a', background: 'rgba(90,58,10,0.2)', color: '#e0a050' }}>
+            ⚠ Supabase 환경변수가 설정되지 않았습니다. Vercel 대시보드에서 환경변수를 확인해주세요.
+          </div>
+        )}
 
         {/* 헤더 */}
         <div className="text-center mb-12 animate-fadein">

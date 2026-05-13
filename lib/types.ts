@@ -19,8 +19,7 @@ export interface Reservation {
   room_id: string | null
   menu_type: MenuType
   status: Status
-  menu_requests: string | null
-  allergies: string | null
+  memo: string | null
   created_at: string
   rooms?: Room | null
 }

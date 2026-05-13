@@ -370,19 +370,12 @@ function ReservationCard({
       {expanded && (
         <div className="px-4 pb-4 border-t" style={{ borderColor: 'var(--color-border)' }}>
           <div className="pt-3 space-y-3">
-            {r.menu_requests && (
+            {r.memo ? (
               <div>
-                <p className="text-xs mb-1" style={{ color: 'var(--color-gold)' }}>메뉴 요청사항</p>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--foreground)' }}>{r.menu_requests}</p>
+                <p className="text-xs mb-1" style={{ color: 'var(--color-gold)' }}>요청사항</p>
+                <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: 'var(--foreground)' }}>{r.memo}</p>
               </div>
-            )}
-            {r.allergies && (
-              <div>
-                <p className="text-xs mb-1" style={{ color: 'var(--color-gold)' }}>알레르기 및 특이사항</p>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--foreground)' }}>{r.allergies}</p>
-              </div>
-            )}
-            {!r.menu_requests && !r.allergies && (
+            ) : (
               <p className="text-xs" style={{ color: 'var(--color-muted)' }}>요청사항 없음</p>
             )}
             <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
