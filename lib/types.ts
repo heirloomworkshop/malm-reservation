@@ -1,6 +1,6 @@
 export type Status = 'pending' | 'confirmed' | 'cancelled'
 
-export type MenuType = '저녁 코스' | '점심 한정식'
+export type MenuType = '점심-한정식' | '점심-코스' | '저녁-한정식' | '저녁-코스'
 
 export interface Room {
   id: string

@@ -7,14 +7,22 @@ import Link from 'next/link'
 import { supabase, isSupabaseConfigured, supabaseUrl } from '@/lib/supabase'
 import { Room, MenuType, BlockedDate } from '@/lib/types'
 
-const MENU_OPTIONS: { value: MenuType; label: string; sub: string }[] = [
-  { value: '저녁 코스', label: '저녁 코스', sub: '실내 프라이빗 룸 · 저녁 다이닝' },
-  { value: '점심 한정식', label: '점심 한정식', sub: '실내 프라이빗 룸 · 점심 다이닝' },
+type TimePeriod = '점심' | '저녁'
+type MenuCategory = '한정식' | '코스'
+
+const TIME_PERIOD_OPTIONS: { value: TimePeriod; label: string; sub: string }[] = [
+  { value: '점심', label: '점심', sub: '11:00부터' },
+  { value: '저녁', label: '저녁', sub: '17:00부터' },
 ]
 
-const TIME_SLOTS: Record<MenuType, string[]> = {
-  '저녁 코스': ['17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30'],
-  '점심 한정식': ['11:00', '11:30', '12:00', '12:30', '13:00', '13:30'],
+const MENU_CATEGORY_OPTIONS: { value: MenuCategory; label: string }[] = [
+  { value: '한정식', label: '한정식' },
+  { value: '코스', label: '코스' },
+]
+
+const TIME_SLOTS: Record<TimePeriod, string[]> = {
+  '점심': ['11:00', '11:30', '12:00', '12:30', '13:00', '13:30'],
+  '저녁': ['17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30'],
 }
 
 interface FormState {
@@ -24,7 +32,8 @@ interface FormState {
   time: string
   guests: number
   room_id: string
-  menu_type: MenuType | ''
+  time_period: TimePeriod | ''
+  menu_category: MenuCategory | ''
   menu_requests: string
   allergies: string
 }
@@ -36,7 +45,8 @@ const emptyForm: FormState = {
   time: '',
   guests: 2,
   room_id: '',
-  menu_type: '',
+  time_period: '',
+  menu_category: '',
   menu_requests: '',
   allergies: '',
 }
@@ -51,7 +61,6 @@ export default function BookPage() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    // Vercel 환경변수 로드 확인
     console.log('[Supabase 환경변수 확인]', {
       configured: isSupabaseConfigured,
       url: supabaseUrl.replace(/^(https:\/\/[^.]{4})[^/]+/, '$1***'),
@@ -80,8 +89,13 @@ export default function BookPage() {
     setError('')
   }
 
-  function handleMenuTypeChange(value: MenuType) {
-    setForm((prev) => ({ ...prev, menu_type: value, time: '' }))
+  function handleTimePeriodChange(value: TimePeriod) {
+    setForm((prev) => ({ ...prev, time_period: value, time: '' }))
+    setError('')
+  }
+
+  function handleMenuCategoryChange(value: MenuCategory) {
+    setForm((prev) => ({ ...prev, menu_category: value }))
     setError('')
   }
 
@@ -99,21 +113,24 @@ export default function BookPage() {
     }
   }
 
-  const currentTimeSlots = form.menu_type ? TIME_SLOTS[form.menu_type] : []
+  const currentTimeSlots = form.time_period ? TIME_SLOTS[form.time_period] : []
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.menu_type) { setError('메뉴 타입을 선택해주세요.'); return }
+    if (!form.time_period) { setError('시간대를 선택해주세요.'); return }
+    if (!form.menu_category) { setError('메뉴를 선택해주세요.'); return }
     if (!form.name.trim()) { setError('이름을 입력해주세요.'); return }
     if (!form.phone.trim()) { setError('연락처를 입력해주세요.'); return }
     if (!form.date) { setError('날짜를 선택해주세요.'); return }
     if (dateError) { setError(dateError); return }
     if (!form.time) { setError('시간을 선택해주세요.'); return }
-    if (!form.room_id) { setError('룸을 선택해주세요.'); return }
+    if (!form.room_id) { setError('공간을 선택해주세요.'); return }
     if (form.guests < 1) { setError('인원을 입력해주세요.'); return }
 
     setSubmitting(true)
     setError('')
+
+    const menu_type: MenuType = `${form.time_period}-${form.menu_category}` as MenuType
 
     const memoParts = []
     if (form.menu_requests.trim()) memoParts.push(`[메뉴 요청] ${form.menu_requests.trim()}`)
@@ -126,7 +143,7 @@ export default function BookPage() {
       time: form.time,
       guests: form.guests,
       room_id: form.room_id,
-      menu_type: form.menu_type,
+      menu_type,
       status: 'pending',
       memo: memoParts.join('\n') || null,
     }
@@ -222,20 +239,20 @@ export default function BookPage() {
 
         <form onSubmit={handleSubmit} className="space-y-8">
 
-          {/* 메뉴 타입 */}
+          {/* 1단계: 시간대 선택 */}
           <section>
-            <Label>메뉴 타입</Label>
-            <div className="grid gap-3 mt-3">
-              {MENU_OPTIONS.map((opt) => (
+            <Label>시간대 선택</Label>
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              {TIME_PERIOD_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => handleMenuTypeChange(opt.value)}
+                  onClick={() => handleTimePeriodChange(opt.value)}
                   className="text-left px-5 py-4 border transition-all duration-150"
                   style={{
-                    borderColor: form.menu_type === opt.value
+                    borderColor: form.time_period === opt.value
                       ? 'var(--color-gold)' : 'var(--color-border)',
-                    background: form.menu_type === opt.value
+                    background: form.time_period === opt.value
                       ? 'rgba(201,168,76,0.06)' : 'var(--color-surface)',
                   }}
                 >
@@ -243,11 +260,11 @@ export default function BookPage() {
                     <span
                       className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
                       style={{
-                        borderColor: form.menu_type === opt.value
+                        borderColor: form.time_period === opt.value
                           ? 'var(--color-gold)' : 'var(--color-border-light)',
                       }}
                     >
-                      {form.menu_type === opt.value && (
+                      {form.time_period === opt.value && (
                         <span className="w-2 h-2 rounded-full"
                           style={{ background: 'var(--color-gold)' }} />
                       )}
@@ -266,9 +283,48 @@ export default function BookPage() {
             </div>
           </section>
 
-          {/* 룸 선택 */}
+          {/* 2단계: 메뉴 선택 */}
           <section>
-            <Label>룸 선택</Label>
+            <Label>메뉴 선택</Label>
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              {MENU_CATEGORY_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => handleMenuCategoryChange(opt.value)}
+                  className="text-left px-5 py-4 border transition-all duration-150"
+                  style={{
+                    borderColor: form.menu_category === opt.value
+                      ? 'var(--color-gold)' : 'var(--color-border)',
+                    background: form.menu_category === opt.value
+                      ? 'rgba(201,168,76,0.06)' : 'var(--color-surface)',
+                  }}
+                >
+                  <div className="flex items-center gap-3">
+                    <span
+                      className="w-4 h-4 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors"
+                      style={{
+                        borderColor: form.menu_category === opt.value
+                          ? 'var(--color-gold)' : 'var(--color-border-light)',
+                      }}
+                    >
+                      {form.menu_category === opt.value && (
+                        <span className="w-2 h-2 rounded-full"
+                          style={{ background: 'var(--color-gold)' }} />
+                      )}
+                    </span>
+                    <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+                      {opt.label}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* 공간 선택 */}
+          <section>
+            <Label>공간 선택</Label>
             <div className="grid grid-cols-2 gap-3 mt-3">
               {rooms.map((room) => (
                 <button
@@ -285,9 +341,6 @@ export default function BookPage() {
                 >
                   <p className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
                     {room.name}
-                  </p>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
-                    {room.capacity_min}–{room.capacity_max}인
                   </p>
                 </button>
               ))}
@@ -346,11 +399,11 @@ export default function BookPage() {
                   required
                   value={form.time}
                   onChange={(e) => set('time', e.target.value)}
-                  disabled={!form.menu_type}
+                  disabled={!form.time_period}
                   className="w-full px-4 py-3 text-sm border rounded-none disabled:opacity-40"
                 >
                   <option value="">
-                    {form.menu_type ? '선택' : '메뉴 먼저 선택'}
+                    {form.time_period ? '선택' : '시간대 먼저 선택'}
                   </option>
                   {currentTimeSlots.map((t) => (
                     <option key={t} value={t}>{t}</option>

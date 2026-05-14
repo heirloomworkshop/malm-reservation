@@ -15,7 +15,7 @@ create table if not exists reservations (
   time text not null,
   guests integer not null,
   room_id uuid references rooms(id) on delete set null,
-  menu_type text not null check (menu_type in ('저녁 코스', '점심 한정식')),
+  menu_type text not null check (menu_type in ('점심-한정식', '점심-코스', '저녁-한정식', '저녁-코스')),
   status text not null default 'pending' check (status in ('pending', 'confirmed', 'cancelled')),
   menu_requests text,
   allergies text,
@@ -29,12 +29,10 @@ create table if not exists blocked_dates (
   created_at timestamptz not null default now()
 );
 
--- 룸 기본 데이터
+-- 공간 기본 데이터
 insert into rooms (name, capacity_min, capacity_max) values
-  ('룸 A', 8, 10),
-  ('룸 B', 8, 12),
-  ('룸 C', 10, 12),
-  ('룸 D', 8, 10)
+  ('룸', 2, 20),
+  ('홀', 2, 50)
 on conflict do nothing;
 
 -- ────────────────────────────────────────────────────────────
@@ -45,10 +43,13 @@ on conflict do nothing;
 -- alter table reservations drop column if exists memo;
 -- alter table reservations drop constraint if exists reservations_menu_type_check;
 -- alter table reservations add constraint reservations_menu_type_check
---   check (menu_type in ('저녁 코스', '점심 한정식'));
+--   check (menu_type in ('점심-한정식', '점심-코스', '저녁-한정식', '저녁-코스'));
 -- create table if not exists blocked_dates (
 --   id uuid primary key default gen_random_uuid(),
 --   date date not null unique,
 --   reason text,
 --   created_at timestamptz not null default now()
 -- );
+-- -- 룸 A/B/C/D → 룸/홀 교체
+-- delete from rooms;
+-- insert into rooms (name, capacity_min, capacity_max) values ('룸', 2, 20), ('홀', 2, 50);
