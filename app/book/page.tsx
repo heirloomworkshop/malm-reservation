@@ -22,7 +22,58 @@ const MENU_CATEGORY_OPTIONS: { value: MenuCategory; label: string }[] = [
 
 const TIME_SLOTS: Record<TimePeriod, string[]> = {
   '점심': ['11:00', '11:30', '12:00', '12:30', '13:00', '13:30'],
-  '저녁': ['17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00', '20:30'],
+  '저녁': ['17:00', '17:30', '18:00'],
+}
+
+interface MenuItem {
+  name: string
+  price: string
+  origin?: string
+  composition?: string
+}
+
+const MENU_ITEMS: Record<MenuCategory, MenuItem[]> = {
+  '한정식': [
+    { name: '직화돼지갈비 한정식', price: '25,000원' },
+    { name: '와인숙성 오리구이 한정식', price: '28,000원', origin: '국내산' },
+    { name: '한우 소불고기 한정식', price: '28,000원' },
+    { name: '은대구 구이 한정식', price: '28,000원' },
+    { name: '전복구이 한정식', price: '32,000원' },
+    { name: '전복구이 & 전복새우장', price: '34,000원' },
+  ],
+  '코스': [
+    {
+      name: '양식 5코스',
+      price: '48,000원',
+      origin: '미국산 채끝',
+      composition: '바질모짜샐러드 · 애플펌프킨스프 · 라구라자냐 · 스테이크 · 디저트',
+    },
+    {
+      name: '양식 7코스',
+      price: '80,000원',
+      origin: '호주산 안심',
+      composition: '아뮤즈부쉬 · 부라타모짜샐러드 · 애플펌프킨스프 · 비트그라브락스 연어 · 라구라자냐 · 스테이크 · 디저트',
+    },
+    {
+      name: '양식 7코스',
+      price: '105,000원',
+      origin: '한우 채끝',
+      composition: '3가지 아뮤즈부쉬 · 부라타모짜샐러드 · 애플펌프킨스프 · 비트그라브락스 연어 · 라구라자냐 · 스테이크 · 디저트',
+    },
+    {
+      name: '양식 7코스',
+      price: '120,000원',
+      origin: '한우 안심',
+      composition: '3가지 아뮤즈부쉬 · 부라타모짜샐러드 · 애플펌프킨스프 · 비트그라브락스 연어 · 라구라자냐 · 스테이크 · 디저트',
+    },
+    { name: '한식 다이닝 코스', price: '80,000원' },
+  ],
+}
+
+function menuItemKey(item: MenuItem): string {
+  return item.origin
+    ? `${item.name} / ${item.price} (${item.origin})`
+    : `${item.name} / ${item.price}`
 }
 
 interface FormState {
@@ -34,6 +85,7 @@ interface FormState {
   room_id: string
   time_period: TimePeriod | ''
   menu_category: MenuCategory | ''
+  selected_menu: string
   menu_requests: string
   allergies: string
 }
@@ -47,6 +99,7 @@ const emptyForm: FormState = {
   room_id: '',
   time_period: '',
   menu_category: '',
+  selected_menu: '',
   menu_requests: '',
   allergies: '',
 }
@@ -95,7 +148,7 @@ export default function BookPage() {
   }
 
   function handleMenuCategoryChange(value: MenuCategory) {
-    setForm((prev) => ({ ...prev, menu_category: value }))
+    setForm((prev) => ({ ...prev, menu_category: value, selected_menu: '' }))
     setError('')
   }
 
@@ -119,6 +172,7 @@ export default function BookPage() {
     e.preventDefault()
     if (!form.time_period) { setError('시간대를 선택해주세요.'); return }
     if (!form.menu_category) { setError('메뉴를 선택해주세요.'); return }
+    if (!form.selected_menu) { setError('세부 메뉴를 선택해주세요.'); return }
     if (!form.name.trim()) { setError('이름을 입력해주세요.'); return }
     if (!form.phone.trim()) { setError('연락처를 입력해주세요.'); return }
     if (!form.date) { setError('날짜를 선택해주세요.'); return }
@@ -130,7 +184,7 @@ export default function BookPage() {
     setSubmitting(true)
     setError('')
 
-    const menu_type: MenuType = `${form.time_period}-${form.menu_category}` as MenuType
+    const menu_type = form.selected_menu
 
     const memoParts = []
     if (form.menu_requests.trim()) memoParts.push(`[메뉴 요청] ${form.menu_requests.trim()}`)
@@ -320,6 +374,63 @@ export default function BookPage() {
                 </button>
               ))}
             </div>
+
+            {form.menu_category && (
+              <div className="mt-3 space-y-2">
+                {MENU_ITEMS[form.menu_category as MenuCategory].map((item) => {
+                  const key = menuItemKey(item)
+                  const isSelected = form.selected_menu === key
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, selected_menu: key }))}
+                      className="w-full text-left px-4 py-3.5 border transition-all duration-150"
+                      style={{
+                        borderColor: isSelected ? 'var(--color-gold)' : 'var(--color-border)',
+                        background: isSelected ? 'rgba(201,168,76,0.06)' : 'var(--color-surface)',
+                      }}
+                    >
+                      <div className="flex items-start gap-3">
+                        <span
+                          className="w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-colors"
+                          style={{
+                            borderColor: isSelected ? 'var(--color-gold)' : 'var(--color-border-light)',
+                          }}
+                        >
+                          {isSelected && (
+                            <span className="w-2 h-2 rounded-full"
+                              style={{ background: 'var(--color-gold)' }} />
+                          )}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+                              {item.name}
+                            </span>
+                            <span className="text-sm font-medium flex-shrink-0"
+                              style={{ color: 'var(--color-gold)' }}>
+                              {item.price}
+                            </span>
+                          </div>
+                          {item.origin && (
+                            <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
+                              {item.origin}
+                            </p>
+                          )}
+                          {item.composition && (
+                            <p className="text-xs mt-1 leading-relaxed"
+                              style={{ color: 'var(--color-muted)' }}>
+                              구성: {item.composition}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </section>
 
           {/* 공간 선택 */}
@@ -409,6 +520,11 @@ export default function BookPage() {
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
+                {form.time_period && (
+                  <p className="text-xs mt-2 leading-relaxed" style={{ color: 'var(--color-muted)' }}>
+                    그 외 시간대 예약은 유선으로 문의 부탁드립니다. 📞 010-4141-3037
+                  </p>
+                )}
               </div>
             </div>
             <div>
@@ -472,8 +588,12 @@ export default function BookPage() {
             {submitting ? '처리 중...' : '예약 신청하기'}
           </button>
 
-          <p className="text-center text-xs pb-8" style={{ color: 'var(--color-muted)' }}>
+          <p className="text-center text-xs pb-4" style={{ color: 'var(--color-muted)' }}>
             예약 신청 후 확정까지 최대 24시간이 소요될 수 있습니다.
+          </p>
+          <p className="text-center text-xs pb-8 leading-relaxed px-2"
+            style={{ color: '#e07070' }}>
+            예약 취소는 유선으로 부탁드리며, 당일 취소는 어려운 점 양해 부탁드립니다.
           </p>
         </form>
       </div>
