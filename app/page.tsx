@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 
 export default function Home() {
   return (
@@ -7,18 +8,16 @@ export default function Home() {
       style={{ background: 'var(--background)' }}
     >
       <div className="text-center animate-fadein">
-        <h1
-          className="font-display font-light mb-14"
-          style={{
-            color: '#ffffff',
-            fontSize: 'clamp(4rem, 12vw, 8rem)',
-            letterSpacing: '0.06em',
-            lineHeight: 1.1,
-          }}
-        >
-          <span className="block">다이닝</span>
-          <span className="block">맑음</span>
-        </h1>
+        <div className="flex justify-center mb-14">
+          <Image
+            src="/logo.png"
+            alt="다이닝 맑음"
+            width={220}
+            height={330}
+            style={{ width: 'clamp(140px, 22vw, 220px)', height: 'auto' }}
+            priority
+          />
+        </div>
 
         <div
           className="w-14 border-t mx-auto mb-14"
