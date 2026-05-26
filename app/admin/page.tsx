@@ -448,7 +448,15 @@ export default function AdminPage() {
 
   async function updateStatus(id: string, status: Status) {
     setUpdating(id)
-    await supabase.from('reservations').update({ status }).eq('id', id)
+    if (status === 'confirmed') {
+      await fetch('/api/reserve/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+    } else {
+      await supabase.from('reservations').update({ status }).eq('id', id)
+    }
     await fetchReservations()
     setUpdating(null)
   }
