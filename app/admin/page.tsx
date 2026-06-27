@@ -454,6 +454,12 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id }),
       })
+    } else if (status === 'cancelled') {
+      await fetch('/api/reserve/reject', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
     } else {
       await supabase.from('reservations').update({ status }).eq('id', id)
     }

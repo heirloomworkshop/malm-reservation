@@ -32,21 +32,21 @@ export async function POST(req: NextRequest) {
 
   const { error: updateError } = await supabase
     .from('reservations')
-    .update({ status: 'confirmed' })
+    .update({ status: 'cancelled' })
     .eq('id', id)
 
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 })
   }
 
-  // SMS 발송 실패는 예약 상태 변경(확정)에 영향을 주지 않는다.
+  // SMS 발송 실패는 예약 상태 변경(거절)에 영향을 주지 않는다.
   const text = [
-    '[다이닝 맑음] 예약이 확정되었습니다.',
-    `${reservation.date} ${reservation.time} / ${reservation.guests}명 / ${reservation.menu_type}`,
-    '취소는 010-4141-3037로 부탁드립니다.',
+    '[다이닝 맑음] 안녕하세요. 신청해주신 예약이 마감되어 해당 시간 예약이 어려울 것 같습니다.',
+    `${reservation.date} ${reservation.time} / ${reservation.guests}명`,
+    '감사합니다.',
   ].join('\n')
 
-  await sendSms(reservation.phone, text, 'confirm')
+  await sendSms(reservation.phone, text, 'reject')
 
   return NextResponse.json({ success: true })
 }
